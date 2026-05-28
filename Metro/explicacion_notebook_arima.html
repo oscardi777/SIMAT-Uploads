@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía: ARIMA / SARIMA / SARIMAX — Consumo Eléctrico</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Code+Pro:wght@400;600&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0f1117;
+    --surface:   #181c27;
+    --surface2:  #1e2436;
+    --border:    #2a3050;
+    --accent1:   #5b8dee;   /* azul ARIMA */
+    --accent2:   #e8724a;   /* naranja SARIMA */
+    --accent3:   #4caf78;   /* verde SARIMAX */
+    --gold:      #f0c060;
+    --text:      #d6daf0;
+    --muted:     #7a839e;
+    --code-bg:   #111520;
+    --code-line: #1a2035;
+    --tag-bg:    #1c2640;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Lato', sans-serif;
+    font-weight: 300;
+    line-height: 1.8;
+    font-size: 16px;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, #0a0d18 0%, #141828 50%, #0f1520 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 70px 0 60px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(91,141,238,.12) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(76,175,120,.10) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  header .badge {
+    display: inline-block;
+    border: 1px solid var(--accent1);
+    color: var(--accent1);
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 5px 18px;
+    border-radius: 2px;
+    margin-bottom: 28px;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3.8rem);
+    font-weight: 900;
+    color: #fff;
+    line-height: 1.15;
+    margin-bottom: 18px;
+  }
+  header h1 span.arima  { color: var(--accent1); }
+  header h1 span.sarima { color: var(--accent2); }
+  header h1 span.sarimx { color: var(--accent3); }
+  header p.subtitle {
+    color: var(--muted);
+    max-width: 600px;
+    margin: 0 auto;
+    font-size: 15px;
+  }
+
+  /* ── NAV INDEX ── */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    max-width: 860px;
+    margin: 50px auto 0;
+    padding: 32px 36px;
+  }
+  .toc h2 { font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--gold); margin-bottom:18px; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin-bottom: 8px; }
+  .toc a { color: var(--accent1); text-decoration: none; font-size: 14px; }
+  .toc a:hover { color: #fff; }
+
+  /* ── MAIN LAYOUT ── */
+  main { max-width: 900px; margin: 0 auto; padding: 60px 24px 100px; }
+
+  /* ── SECTION ── */
+  .section {
+    margin-bottom: 72px;
+    border-left: 3px solid var(--border);
+    padding-left: 28px;
+    transition: border-color .3s;
+  }
+  .section:hover { border-color: var(--accent1); }
+  .section.sarima:hover { border-color: var(--accent2); }
+  .section.sarimax:hover { border-color: var(--accent3); }
+  .section.gold:hover { border-color: var(--gold); }
+
+  .section-num {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .section h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 20px;
+  }
+  .section h2 .pill {
+    font-family: 'Lato', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-left: 12px;
+    vertical-align: middle;
+    font-weight: 700;
+  }
+  .pill-arima  { background: rgba(91,141,238,.2); color: var(--accent1); border: 1px solid var(--accent1); }
+  .pill-sarima { background: rgba(232,114,74,.2);  color: var(--accent2); border: 1px solid var(--accent2); }
+  .pill-sarimax{ background: rgba(76,175,120,.2);  color: var(--accent3); border: 1px solid var(--accent3); }
+  .pill-all    { background: rgba(240,192,96,.15); color: var(--gold);    border: 1px solid var(--gold);    }
+
+  .section p  { margin-bottom: 14px; color: var(--text); }
+  .section ul, .section ol { padding-left: 22px; margin-bottom: 14px; }
+  .section li { margin-bottom: 8px; }
+
+  strong { color: #fff; font-weight: 700; }
+  em { color: var(--gold); font-style: normal; }
+
+  /* ── CODE BLOCK ── */
+  .code-wrap {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 20px 0;
+    overflow: hidden;
+  }
+  .code-header {
+    background: var(--code-line);
+    padding: 8px 16px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .code-header span.dot {
+    width: 9px; height: 9px; border-radius: 50%;
+  }
+  .dot-r { background: #e05555; }
+  .dot-y { background: #e0b055; }
+  .dot-g { background: #55c07a; }
+  pre {
+    padding: 20px 22px;
+    overflow-x: auto;
+    font-family: 'Source Code Pro', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #c8cfe8;
+  }
+  .kw  { color: #82aaff; }   /* keywords */
+  .fn  { color: #82cfca; }   /* functions */
+  .st  { color: #c3e88d; }   /* strings */
+  .cm  { color: #546e7a; font-style: italic; } /* comments */
+  .nb  { color: #f78c6c; }   /* numbers/builtins */
+  .op  { color: #89ddff; }   /* operators/punctuation */
+
+  /* ── CALLOUT ── */
+  .callout {
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-size: 14.5px;
+    border-left: 3px solid;
+  }
+  .callout.info  { background: rgba(91,141,238,.08); border-color: var(--accent1); }
+  .callout.warn  { background: rgba(240,192,96,.08); border-color: var(--gold); }
+  .callout.tip   { background: rgba(76,175,120,.08); border-color: var(--accent3); }
+  .callout.model { background: rgba(232,114,74,.08); border-color: var(--accent2); }
+  .callout .label {
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    font-weight: 700; margin-bottom: 6px;
+  }
+  .callout.info  .label { color: var(--accent1); }
+  .callout.warn  .label { color: var(--gold);    }
+  .callout.tip   .label { color: var(--accent3); }
+  .callout.model .label { color: var(--accent2); }
+
+  /* ── TABLE ── */
+  .tbl-wrap { overflow-x: auto; margin: 20px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    background: var(--surface2);
+    color: var(--gold);
+    font-weight: 700;
+    text-align: left;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: .5px;
+  }
+  td {
+    padding: 9px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  tr:hover td { background: rgba(255,255,255,.03); }
+  code {
+    background: var(--tag-bg);
+    font-family: 'Source Code Pro', monospace;
+    font-size: 12.5px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: #c3e88d;
+  }
+
+  /* ── MODEL CARDS ── */
+  .model-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 18px; margin: 24px 0; }
+  .model-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .model-card h3 { font-size: 1rem; margin-bottom: 10px; font-family:'Playfair Display',serif; }
+  .model-card.a h3 { color: var(--accent1); }
+  .model-card.b h3 { color: var(--accent2); }
+  .model-card.c h3 { color: var(--accent3); }
+  .model-card p { font-size: 13.5px; color: var(--muted); margin: 0; }
+
+  /* ── FORMULA ── */
+  .formula {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 20px;
+    text-align: center;
+    font-family: 'Source Code Pro', monospace;
+    font-size: 14px;
+    color: #c3e88d;
+    margin: 18px 0;
+    letter-spacing: .5px;
+  }
+
+  /* ── DIAGRAM ── */
+  .timeline {
+    display: flex;
+    margin: 24px 0;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .timeline .seg {
+    padding: 14px 16px;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .seg-train { background: rgba(91,141,238,.15); flex: 5; color: var(--accent1); border-right: 2px solid var(--accent1); }
+  .seg-cv    { background: rgba(240,192,96,.15);  flex: 2; color: var(--gold);    border-right: 2px solid var(--gold); }
+  .seg-test  { background: rgba(232,114,74,.15);  flex: 2; color: var(--accent2); }
+  .seg .label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; opacity: .7; margin-bottom: 4px; }
+  .seg strong { display: block; font-size: 13px; }
+
+  /* ── DIVIDER ── */
+  hr { border: none; border-top: 1px solid var(--border); margin: 60px 0; }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    padding: 40px 0 60px;
+    color: var(--muted);
+    font-size: 13px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── ANIMATION ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .section { animation: fadeUp .5s ease both; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ HEADER ═══════════════════════════ -->
+<header>
+  <div class="badge">Guía de Clase — Serie de Tiempo</div>
+  <h1>
+    <span class="arima">ARIMA</span> /
+    <span class="sarima">SARIMA</span> /
+    <span class="sarimx">SARIMAX</span><br>
+    aplicados al consumo eléctrico
+  </h1>
+  <p class="subtitle">Explicación sección a sección del notebook de tuning de hiperparámetros con walk-forward CV, pensada para tu dataset de consumo eléctrico diario.</p>
+</header>
+
+<!-- ═══════════════════════════ TOC ═══════════════════════════ -->
+<div class="toc">
+  <h2>Índice del notebook</h2>
+  <ol>
+    <li><a href="#s1">Sección 1 — Imports: las librerías que usamos</a></li>
+    <li><a href="#s2">Sección 2 — Configuración global: parámetros que tú controlas</a></li>
+    <li><a href="#s3">Sección 3 — Carga del dataset</a></li>
+    <li><a href="#s4">Sección 4 — Definición dinámica de splits (Train / CV / Test)</a></li>
+    <li><a href="#s5">Sección 5 — Preparación de series y variables exógenas</a></li>
+    <li><a href="#s6">Sección 6 — Funciones auxiliares: métricas y ajuste de modelos</a></li>
+    <li><a href="#s7">Sección 7 — Espacios de hiperparámetros y defaults</a></li>
+    <li><a href="#s8">Sección 8 — Grid Search + Walk-Forward CV (el tuning)</a></li>
+    <li><a href="#s9">Sección 9 — Convergencia del tuning</a></li>
+    <li><a href="#s10">Sección 10 — Evaluación final en test</a></li>
+    <li><a href="#s11">Secciones 11–17 — Visualizaciones de resultados</a></li>
+    <li><a href="#s18">Sección 18 — Exportar resultados</a></li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════ MAIN ═══════════════════════════ -->
+<main>
+
+<!-- ─────────────── CONCEPTOS PREVIOS ─────────────── -->
+<div class="section gold" style="margin-top:60px;" id="conceptos">
+  <div class="section-num">Conceptos previos</div>
+  <h2>¿Qué son ARIMA, SARIMA y SARIMAX? <span class="pill pill-all">Teoría</span></h2>
+
+  <p>Antes de entrar al código es importante entender qué hace cada modelo y por qué los tres tienen sentido para tu problema de consumo eléctrico diario.</p>
+
+  <div class="model-cards">
+    <div class="model-card a">
+      <h3>ARIMA</h3>
+      <p>AutoRegressive Integrated Moving Average. Modela la serie usando sus propios valores pasados (AR), la diferenciación para estacionarizarla (I) y los errores pasados (MA). <strong>No entiende de estacionalidad.</strong></p>
+    </div>
+    <div class="model-card b">
+      <h3>SARIMA</h3>
+      <p>ARIMA + componente Seasonal. Añade un segundo bloque (P, D, Q, m) que captura patrones que se repiten cada <em>m</em> periodos. Ideal cuando el consumo sube/baja cada semana.</p>
+    </div>
+    <div class="model-card c">
+      <h3>SARIMAX</h3>
+      <p>SARIMA + variables eXógenas. Puede incorporar tus 11 columnas adicionales (día de semana, festivos, mantenimientos…) como información extra para mejorar la predicción.</p>
+    </div>
+  </div>
+
+  <p>En tu dataset, el consumo eléctrico de la estación probablemente tiene un patrón <strong>semanal</strong> (más consumo entre semana, menos los fines de semana) y puede verse afectado por eventos como festivos o mantenimientos. Eso hace que SARIMA y SARIMAX sean los candidatos más fuertes.</p>
+
+  <div class="callout info">
+    <div class="label">¿Por qué no usar solo SARIMAX?</div>
+    Siempre es bueno comparar los tres. A veces las variables exógenas añaden ruido en lugar de señal. El notebook evalúa los tres y deja que las métricas decidan.
+  </div>
+
+  <p>La notación formal de los parámetros que vamos a tunear es:</p>
+  <div class="formula">
+    ARIMA(p, d, q) — SARIMA(p, d, q)(P, D, Q)[m] — SARIMAX(p, d, q)(P, D, Q)[m] + X
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <tr><th>Parámetro</th><th>Nombre</th><th>Qué controla</th><th>Ejemplo intuitivo</th></tr>
+      <tr><td><code>p</code></td><td>AR order</td><td>¿Cuántos días pasados de consumo usar?</td><td>p=2 → usa consumo de ayer y anteayer</td></tr>
+      <tr><td><code>d</code></td><td>Integration</td><td>¿Cuántas veces diferenciar para quitar tendencia?</td><td>d=1 → trabaja con el cambio diario de consumo</td></tr>
+      <tr><td><code>q</code></td><td>MA order</td><td>¿Cuántos errores pasados incluir?</td><td>q=1 → corrige usando el error de ayer</td></tr>
+      <tr><td><code>P</code></td><td>Seasonal AR</td><td>Como p, pero con saltos de m periodos</td><td>P=1, m=7 → usa consumo del mismo día la semana pasada</td></tr>
+      <tr><td><code>D</code></td><td>Seasonal I</td><td>Diferenciación estacional</td><td>D=1, m=7 → quita la tendencia semanal</td></tr>
+      <tr><td><code>Q</code></td><td>Seasonal MA</td><td>Errores estacionales pasados</td><td>Q=1, m=7 → corrige usando error del mismo día semana pasada</td></tr>
+      <tr><td><code>m</code></td><td>Seasonality</td><td>Cada cuántos periodos se repite el patrón</td><td>m=7 para patrón semanal en datos diarios</td></tr>
+    </table>
+  </div>
+</div>
+
+<hr>
+
+<!-- ─────────────── SECCIÓN 1 ─────────────── -->
+<div class="section" id="s1">
+  <div class="section-num">Sección 1</div>
+  <h2>Imports — Las librerías que usamos <span class="pill pill-all">Celda 2</span></h2>
+
+  <p>Cada librería tiene un rol muy específico. No se importa nada de más.</p>
+
+  <div class="code-wrap">
+    <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> imports</div>
+    <pre><span class="kw">import</span> warnings, time, json, itertools
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+<span class="kw">import</span> matplotlib.ticker <span class="kw">as</span> mticker
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> mean_absolute_error, mean_squared_error, r2_score
+
+<span class="kw">from</span> pmdarima <span class="kw">import</span> ARIMA</pre>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <tr><th>Librería</th><th>Uso en este notebook</th></tr>
+      <tr><td><code>numpy</code></td><td>Operaciones numéricas sobre arrays: calcular errores, medias, NaN.</td></tr>
+      <tr><td><code>pandas</code></td><td>Toda la gestión del dataset: leer CSV, indexar por fecha, filtrar rangos, hacer pivotes para las métricas.</td></tr>
+      <tr><td><code>matplotlib</code></td><td>Generar todos los gráficos: predicción vs real, heatmaps, barras de error, convergencia del tuning.</td></tr>
+      <tr><td><code>sklearn.metrics</code></td><td>Funciones listas para calcular MAE, MSE y R². Ahorra escribir las fórmulas a mano.</td></tr>
+      <tr><td><code>pmdarima.ARIMA</code></td><td>La librería central. Envuelve <code>statsmodels</code> con una API más sencilla, tipo sklearn. Un único objeto <code>ARIMA</code> sirve para los tres modelos cambiando los parámetros.</td></tr>
+      <tr><td><code>itertools</code></td><td>Genera todas las combinaciones (p,d,q,P,D,Q) del grid de búsqueda. <code>itertools.product</code> es como el producto cartesiano matemático.</td></tr>
+      <tr><td><code>tqdm</code></td><td>Barra de progreso opcional. Muestra cuánto falta del tuning.</td></tr>
+      <tr><td><code>warnings</code></td><td>Silencia los avisos repetitivos de statsmodels (convergencia, frecuencia).</td></tr>
+    </table>
+  </div>
+
+  <div class="callout tip">
+    <div class="label">¿Por qué pmdarima y no statsmodels directamente?</div>
+    <code>statsmodels.tsa.statespace.SARIMAX</code> es el motor real, pero su API requiere crear, ajustar y llamar al resultado en pasos separados. <strong>pmdarima</strong> lo envuelve en un objeto con <code>.fit()</code> y <code>.predict()</code> idénticos al estilo de scikit-learn, lo que nos permite poner los tres modelos en el mismo bucle sin código repetido.
+  </div>
+</div>
+
+<!-- ─────────────── SECCIÓN 2 ─────────────── -->
+<div class="section" id="s2">
+  <div class="section-num">Sección 2</div>
+  <h2>Configuración global <span class="pill pill-all">Celda 4</span></h2>
+
+  <p>Toda la configuración relevante está en una sola celda. La idea es que nunca tengas que buscar parámetros enterrados dentro del código.</p>
+
+  <div class="code-wrap">
+    <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> config</div>
+    <pre>CSV_PATH    = <span class="st">'data/features_mes_completo.csv'</span>
+
+TRAIN_START = <span class="st">'2018-01'</span>   <span class="cm"># Primer mes del train (inclusive)</span>
+TEST_START  = <span class="st">'2024-09'</span>   <span class="cm"># Primer mes del test (todo desde aquí)</span>
+
+SEASONAL_M  = <span class="nb">7</span>           <span class="cm"># Periodicidad: 7 = semanal</span>
+N_CV_FOLDS  = <span class="nb">6</span>           <span class="cm"># Folds walk-forward dentro del train</span>
+CV_H        = <span class="nb">30</span>          <span class="cm"># Horizonte de predicción por fold (días)</span></pre>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <tr><th>Parámetro</th><th>Qué hace</th><th>Cuándo cambiarlo</th></tr>
+      <tr><td><code>TRAIN_START</code></td><td>Primer mes que entra en el entrenamiento</td><td>Si quieres ignorar datos muy antiguos o con calidad diferente</td></tr>
+      <tr><td><code>TEST_START</code></td><td>Desde aquí todo es test; el modelo nunca ve estos datos durante el entrenamiento ni el tuning</td><td>Ajusta según cuánto test quieres evaluar</td></tr>
+      <tr><td><code>SEASONAL_M</code></td><td>Período de la estacionalidad. Con datos <strong>diarios</strong> y patrón <strong>semanal</strong>, <em>m = 7</em></td><td>Si detectas un patrón mensual dominante podrías probar m = 30</td></tr>
+      <tr><td><code>N_CV_FOLDS</code></td><td>Cuántos meses del train se usan como folds internos para el tuning</td><td>Más folds = evaluación más robusta pero más lento</td></tr>
+      <tr><td><code>CV_H</code></td><td>Horizonte de predicción en cada fold CV (30 días = predecir un mes)</td><td>Ajusta si te interesa otro horizonte de predicción</td></tr>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <div class="label">Importante: SEASONAL_M = 7</div>
+    Con <code>m=7</code> le decimos al modelo: <em>"el consumo del lunes de esta semana se parece al consumo del lunes de la semana pasada"</em>. Esto es casi siempre cierto para una estación de metro: hay más tráfico (y consumo) entre semana que los fines de semana. Si tuvieras datos mensuales en vez de diarios, usarías <code>m=12</code>.
+  </div>
+</div>
+
+<!-- ─────────────── SECCIÓN 3 ─────────────── -->
+<div class="section" id="s3">
+  <div class="section-num">Sección 3</div>
+  <h2>Carga del dataset <span class="pill pill-all">Celda 6</span></h2>
+
+  <div class="code-wrap">
+    <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> carga</div>
+    <pre>df_raw = pd.<span class="fn">read_csv</span>(CSV_PATH)
+df_raw[<span class="st">'Fecha'</span>] = pd.<span class="fn">to_datetime</span>(df_raw[<span class="st">'Fecha'</span>])
+df_raw = df_raw.<span class="fn">set_index</span>(<span class="st">'Fecha'</span>)
+df_raw.<span class="fn">sort_index</span>(inplace=<span class="kw">True</span>)
+
+df_raw = df_raw.<span class="fn">asfreq</span>(<span class="st">'D'</span>)    <span class="cm"># ← frecuencia diaria explícita</span>
+df_raw = df_raw.iloc[:, :<span class="nb">12</span>]  <span class="cm"># ← primeras 12 columnas</span>
+
+<span class="cm"># Convertir booleanos a int</span>
+bool_cols = df_raw.<span class="fn">select_dtypes</span>(include=<span class="st">'bool'</span>).columns.<span class="fn">tolist</span>()
+<span class="kw">if</span> bool_cols:
+    df_raw[bool_cols] = df_raw[bool_cols].<span class="fn">astype</span>(<span class="nb">int</span>)</pre>
+  </div>
+
+  <p>Desglosemos cada línea:</p>
+
+  <div class="tbl-wrap">
+    <table>
+      <tr><th>Línea</th><th>Qué hace y por qué</th></tr>
+      <tr><td><code>pd.read_csv()</code></td><td>Lee el archivo. El resultado es un DataFrame con Fecha como columna de texto.</td></tr>
+      <tr><td><code>pd.to_datetime()</code></td><td>Convierte el texto <code>"2018-01-01"</code> a un objeto <code>Timestamp</code> que pandas entiende como fecha real. Sin esto no podemos filtrar por rango de fechas.</td></tr>
+      <tr><td><code>.set_index('Fecha')</code></td><td>Pone la columna Fecha como índice del DataFrame. Esto es fundamental para los modelos de series de tiempo: statsmodels espera que el eje temporal sea el índice.</td></tr>
+      <tr><td><code>.sort_index()</code></td><td>Garantiza que las fechas van en orden cronológico. Si no, los splits quedarían mal.</td></tr>
+      <tr><td><code>.asfreq('D')</code></td><td>Le dice a pandas que la frecuencia del índice es <strong>diaria</strong> (D = Day). Esto es clave: statsmodels usa la frecuencia del índice para entender los patrones estacionales. Sin esto lanza un <code>ValueWarning</code> en cada ajuste y puede funcionar mal.</td></tr>
+      <tr><td><code>.iloc[:, :12]</code></td><td>Selecciona solo las primeras 12 columnas: la variable objetivo <em>Consumo</em> (columna 0) más las 11 variables exógenas. Ignora cualquier columna extra.</td></tr>
+      <tr><td><code>.astype(int)</code></td><td>Statsmodels no acepta columnas <code>bool</code> (True/False). Las convertimos a 0/1 para que funcionen como variables binarias numéricas.</td></tr>
+    </table>
+  </div>
+
+  <div class="callout info">
+    <div class="label">Estructura del dataset esperada</div>
+    Después de esta celda el DataFrame tiene: <strong>índice = Fecha (diaria)</strong>, <strong>columna 0 = Consumo</strong> (variable a predecir), <strong>columnas 1–11 = variables exógenas</strong> (día de semana, festivos, mantenimientos, etc.). Cualquier NaN generado por <code>asfreq('D')</code> en días sin datos se deja intacto; statsmodels lo maneja.
+  </div>
+</div>
+
+<!-- ─────────────── SECCIÓN 4 ─────────────── -->
+<div class="section" id="s4">
+  <div class="section-num">Sección 4</div>
+  <h2>Definición dinámica de splits <span class="pill pill-all">Celdas 8–9</span></h2>
+
+  <p>Esta es una de las secciones más importantes. Aquí se construye la lógica de cómo se divide el tiempo en Train, Folds CV y Test.</p>
+
+  <div class="timeline">
+    <div class="seg seg-train">
+      <div class="label">Train</div>
+      <strong>2018-01 → antes del TEST_START</strong>
+      Datos para aprender
+    </div>
+    <div class="seg seg-cv">
+      <div class="label">Folds CV (dentro de train)</div>
+      <strong>Últimos N_CV_FOLDS meses</strong>
+      Para elegir parámetros
+    </div>
+    <div class="seg seg-test">
+      <div class="label">Test</div>
+      <strong>TEST_START → fin</strong>
+      Evaluación final bloqueada
+    </div>
+  </div>
+
+  <div class="code-wrap">
+    <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> splits</div>
+    <pre><span class="kw">def</span> <span class="fn">month_row_count</span>(period, dataframe):
+    start = pd.<span class="fn">Timestamp</span>(<span class="fn">str</span>(period) + <span class="st">'-01'</span>)
+    end   = start + pd.offsets.<span class="fn">MonthEnd</span>(<span class="nb">1</span>)
+    <span class="kw">return</span> <span class="fn">len</span>(dataframe[(dataframe.index >= start) &
+                          (dataframe.index <= end)])
+
+<span class="cm"># Meses de test: ≥ 20 días de datos</span>
+TEST_MONTHS = []
+<span class="kw">while</span> p <= last_period:
+    <span class="kw">if</span> <span class="fn">month_row_count</span>(p, df) >= <span class="nb">20</span>:
+        TEST_MONTHS.<span class="fn">append</span>(<span class="fn">str</span>(p))
+    p += <span class="nb">1</span>
+
+<span class="cm"># Folds CV: últimos N_CV_FOLDS meses del train</span>
+CV_MONTHS = []
+<span class="kw">while</span> <span class="fn">len</span>(CV_MONTHS) < N_CV_FOLDS:
+    <span class="kw">if</span> <span class="fn">month_row_count</span>(p, df) >= <span class="nb">20</span>:
+        CV_MONTHS.<span class="fn">insert</span>(<span class="nb">0</span>, <span class="fn">str</span>(p))
+    p -= <span class="nb">1</span></pre>
+  </div>
+
+  <p><strong>¿Por qué se filtra por meses completos (≥ 20 días)?</strong> Si el último mes del dataset tiene solo 5 días, incluirlo como mes de test distorsionaría las métricas: el MAPE de esos 5 días no es comparable con el MAPE de un mes completo. El umbral de 20 días garantiza que cada "mes de test" representa un periodo razonablemente completo.</p>
+
+  <div class="callout model">
+    <div class="label">¿Por qué no hay split de validación separado como en los árboles?</div>
+    En los modelos de árboles (XGBoost, Random Forest) el tuning necesita un set de validación independiente porque los modelos tienen muchos hiperparámetros que interactúan y es fácil sobreajustar al conjunto de validación. En los modelos ARIMA, el espacio de parámetros es mucho más pequeño (p, d, q, P, D, Q son números pequeños) y el tuning se hace con <strong>walk-forward CV</strong>: en cada fold se usa toda la historia anterior al mes del fold como train, y se predice ese mes. Esto ya es validación robusta interna, sin necesidad de un split externo.
+  </div>
+
+  <p>Las funciones de pandas usadas aquí:</p>
+  <div class="tbl-wrap">
+    <table>
+      <tr><th>Función</th><th>Qué hace</th></tr>
+      <tr><td><code>pd.Timestamp('2024-09-01')</code></td><td>Crea un punto exacto en el tiempo. Es comparable con el índice del DataFrame.</td></tr>
+      <tr><td><code>pd.offsets.MonthEnd(1)</code></td><td>Salta al último día del mes. Suma a un Timestamp da el fin de mes exacto (28, 29, 30 o 31 días según el mes).</td></tr>
+      <tr><td><code>pd.offsets.MonthBegin(1)</code></td><td>Salta al primer día del mes siguiente. Se usa para retroceder en los folds CV.</td></tr>
+      <tr><td><code>.to_period('M')</code></td><td>Convierte un Timestamp a un periodo mensual (ej: <code>2024-09</code>). Permite iterar mes a mes con <code>p += 1</code>.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ─────────────── SECCIÓN 5 ─────────────── -->
+<div class="section" id="s5">
+  <div class="section-num">Sección 5</div>
+  <h2>Preparación de series y variables exógenas <span class="pill pill-all">Celda 11</span></h2>
+
+  <div class="code-wrap">
+    <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> series</div>
+    <pre>TARGET    = <span class="st">'Consumo'</span>
+EXOG_COLS = [c <span class="kw">for</span> c <span class="kw">in</span> df.columns <span class="kw">if</span> c != TARGET]
+
+y_train = train_df[TARGET]       <span class="cm"># Serie 1D: índice fechas, valores consumo</span>
+X_train = train_df[EXOG_COLS]   <span class="cm"># DataFrame 2D: mismo índice, 11 columnas</span>
+
+y_test  = test_df[TARGET]
+X_test  = test_df[EXOG_COLS]</pre>
+  </div>
+
+  <p>Separamos el dataset en dos piezas de naturaleza distinta:</p>
+
+  <div class="tbl-wrap">
+    <table>
+      <tr><th>Variable</th><th>Tipo</th><th>Contenido</th><th>Quién la usa</th></tr>
+      <tr><td><code>y_train</code></td><td>pd.Series (1D)</td><td>Consumo diario histórico de train</td><td>ARIMA, SARIMA, SARIMAX</td></tr>
+      <tr><td><code>X_train</code></td><td>pd.DataFrame (2D)</td><td>11 variables exógenas del train</td><td>Solo SARIMAX</td></tr>
+      <tr><td><code>y_test</code></td><td>pd.Series (1D)</td><td>Consumo diario del test (para evaluar)</td><td>Métrica de error</td></tr>
+      <tr><td><code>X_test</code></td><td>pd.DataFrame (2D)</td><td>11 variables exógenas del test</td><td>Solo SARIMAX al predecir</td></tr>
+    </table>
+  </div>
+
+  <div class="callout info">
+    <div class="label">Las variables exógenas en SARIMAX</div>
+    Las 11 columnas que tienes (información de fecha: día de semana, festivo, mes…; y eventos: mantenimientos) actúan como <em>entradas externas conocidas</em>. SARIMAX las usa para ajustar la predicción: <em>"sé que mañana es festivo, por lo tanto el consumo caerá"</em>. Esto le da una ventaja sobre ARIMA y SARIMA que solo miran el pasado de la propia serie. La clave es que estas variables también deben estar disponibles en el periodo de test (lo cual en tu caso es cierto: el calendario y los mantenimientos programados se conocen de antemano).
+  </div>
+</div>
+
+<!-- ─────────────── SECCIÓN 6 ─────────────── -->
+<div class="section" id="s6">
+  <div class="section-num">Sección 6</div>
+  <h2>Funciones auxiliares <span class="pill pill-all">Celda 13</span></h2>
+
+  <p>Hay cuatro funciones centrales. Cada una tiene un propósito muy específico.</p>
+
+  <h3 style="color:var(--gold); margin: 24px 0 10px; font-size:1.05rem;">① compute_metrics — Calcular MAE, RMSE, MAPE y R²</h3>
+  <div class="code-wrap">
+    <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> métricas</div>
+    <pre><span class="kw">def</span> <span class="fn">compute_metrics</span>(y_true, y_pred):
+    mae  = <span class="fn">mean_absolute_error</span>(y_true, y_pred)
+    rmse = np.<span class="fn">sqrt</span>(<span class="fn">mean_squared_error</span>(y_true, y_pred))
+    mask = y_true != <span class="nb">0</span>
+    mape = np.<span class="fn">mean</span>(np.<span class="fn">abs</span>((y_true[mask] - y_pred[mask]) / y_true[mask])) * <span class="nb">100</span>
+    r2   = <span class="fn">r2_score</span>(y_true, y_pred)
+    <span class="kw">return</span> {<span class="st">'MAE'</span>: mae, <span class="st">'RMSE'</span>: rmse, <span class="st">'MAPE (%)'</span>: mape, <span class="st">'R²'</span>: r2}</pre>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <tr><th>Métrica</th><th>Fórmula intuitiva</th><th>Interpretación para tu caso</th></tr>
+      <tr><td><strong>MAE</strong></td><td>Promedio de |error| en kWh</td><td>Si MAE = 500 kWh, el modelo se equivoca en promedio 500 kWh por día</td></tr>
+      <tr><td><strong>RMSE</strong></td><td>Raíz del promedio de error²</td><td>Penaliza más los errores grandes. Útil si un día de error enorme es inaceptable</td></tr>
+      <tr><td><strong>MAPE</strong></td><td>Promedio de |error| / real × 100</td><td>Error en porcentaje. Un MAPE del 3% significa que el modelo se equivoca el 3% del consumo real. Facilita comparar meses con distinto nivel de consumo</td></tr>
+      <tr><td><strong>R²</strong></td><td>Varianza explicada por el modelo</td><td>R²=0.9 → el modelo explica el 90% de la variación del consumo. R²&lt;0 → peor que predecir la media</td></tr>
+    </table>
+  </div>
+
+  <p>El <code>mask = y_true != 0</code> evita divisiones por cero en el MAPE para días donde el consumo registrado sea exactamente cero.</p>
+
+  <h3 style="color:var(--gold); margin: 24px 0 10px; font-size:1.05rem;">② build_model — Construir el objeto del modelo</h3>
+  <div class="code-wrap">
+    <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> build_model</div>
+    <pre><span class="kw">def</span> <span class="fn">build_model</span>(model_name, order, seasonal_order=<span class="kw">None</span>):
+    <span class="kw">if</span> model_name == <span class="st">'ARIMA'</span>:
+        <span class="kw">return</span> <span class="fn">ARIMA</span>(order=order)           <span class="cm"># (p, d, q)</span>
+    <span class="kw">else</span>:  <span class="cm"># SARIMA / SARIMAX</span>
+        <span class="kw">return</span> <span class="fn">ARIMA</span>(order=order,            <span class="cm"># (p, d, q)</span>
+                     seasonal_order=seasonal_order)  <span class="cm"># (P, D, Q, m)</span></pre>
+  </div>
+
+  <p>Nota que <strong>SARIMA y SARIMAX usan el mismo objeto</strong> <code>ARIMA</code> de pmdarima con <code>seasonal_order</code> activo. La diferencia entre ellos no está en la construcción del modelo sino en si le pasas las variables exógenas al <code>.fit()</code>. El objeto no sabe si es SARIMA o SARIMAX hasta que lo entrenas.</p>
+
+  <h3 style="color:var(--gold); margin: 24px 0 10px; font-size:1.05rem;">③ fit_predict_model — Ajustar y predecir</h3>
+  <div class="code-wrap">
+    <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> fit_predict</div>
+    <pre><span class="kw">def</span> <span class="fn">fit_predict_model</span>(model_name, order, seasonal_order,
+                      y_tr, X_tr, y_te, X_te):
+    m = <span class="fn">build_model</span>(model_name, order, seasonal_order)
+    <span class="kw">if</span> model_name == <span class="st">'SARIMAX'</span>:
+        m.<span class="fn">fit</span>(y_tr, X=X_tr)                       <span class="cm"># ← pasa exógenas al train</span>
+        preds = m.<span class="fn">predict</span>(n_periods=<span class="fn">len</span>(y_te), X=X_te)  <span class="cm"># ← y al predecir</span>
+    <span class="kw">else</span>:
+        m.<span class="fn">fit</span>(y_tr)                                <span class="cm"># ARIMA/SARIMA: solo la serie</span>
+        preds = m.<span class="fn">predict</span>(n_periods=<span class="fn">len</span>(y_te))</pre>
+  </div>
+
+  <p><code>n_periods=len(y_te)</code> le dice al modelo cuántos pasos adelante predecir. Si el mes de test tiene 30 días, se hacen 30 predicciones hacia adelante a partir del último dato de entrenamiento.</p>
+
+  <div class="callout warn">
+    <div class="label">Predicción multi-paso vs un-paso</div>
+    Esta función hace predicción <strong>multi-paso</strong>: el modelo se ajusta una vez y predice todos los días del mes de un golpe. Cada predicción del día N usa las predicciones del día N-1 como entrada (no el valor real). Esto es más realista para un escenario de operación real donde no se conoce el consumo del día anterior. Produce mayor error que la predicción un-paso, pero es más honesto.
+  </div>
+
+  <h3 style="color:var(--gold); margin: 24px 0 10px; font-size:1.05rem;">④ cv_score_arima — Walk-Forward CV</h3>
+  <div class="code-wrap">
+    <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> walk-forward CV</div>
+    <pre><span class="kw">def</span> <span class="fn">cv_score_arima</span>(model_name, order, seasonal_order, cv_months):
+    mapes = []
+    <span class="kw">for</span> mes <span class="kw">in</span> cv_months:
+        cutoff = pd.<span class="fn">Timestamp</span>(<span class="st">f'{mes}-01'</span>)
+        end    = cutoff + pd.offsets.<span class="fn">MonthEnd</span>(<span class="nb">1</span>)
+        tr  = df[df.index < cutoff]       <span class="cm"># todo ANTES del mes</span>
+        val = df[(df.index >= cutoff) &   <span class="cm"># el mes completo</span>
+                  (df.index <= end)]
+        <span class="cm"># → ajusta, predice, calcula MAPE</span>
+    <span class="kw">return</span> float(np.<span class="fn">mean</span>(mapes))</pre>
+  </div>
+
+  <p>Esta es la función más importante del tuning. Para cada combinación de hiperparámetros (p, d, q…), en lugar de ajustar una vez, se ajusta <em>N_CV_FOLDS veces</em>. En cada fold:</p>
+  <ol>
+    <li><strong>Train</strong> = todo el dataset hasta el inicio del mes de CV</li>
+    <li><strong>Validación</strong> = ese mes completo</li>
+    <li>Se calcula el MAPE de ese fold</li>
+  </ol>
+  <p>El score final es el <strong>MAPE promedio</strong> sobre todos los folds. La combinación de parámetros con menor MAPE promedio gana. Esto es walk-forward porque en cada fold el train se expande hacia adelante.</p>
+</div>
+
+<!-- ─────────────── SECCIÓN 7 ─────────────── -->
+<div class="section sarima" id="s7">
+  <div class="section-num">Sección 7</div>
+  <h2>Espacios de hiperparámetros y defaults <span class="pill pill-all">Celdas 15–17</span></h2>
+
+  <p>Se definen tres cosas: la grilla de búsqueda, los parámetros por defecto (baseline), y una opción de muestreo aleatorio.</p>
+
+  <div class="code-wrap">
+    <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> param grid</div>
+    <pre>PARAM_GRID = {
+    <span class="st">'p'</span>: [<span class="nb">0, 1, 2, 3</span>],  <span class="st">'d'</span>: [<span class="nb">0, 1</span>],  <span class="st">'q'</span>: [<span class="nb">0, 1, 2, 3</span>],
+    <span class="st">'P'</span>: [<span class="nb">0, 1, 2</span>],    <span class="st">'D'</span>: [<span class="nb">0, 1</span>],  <span class="st">'Q'</span>: [<span class="nb">0, 1, 2</span>],
+}
+
+GRID_ARIMA = <span class="fn">list</span>(itertools.<span class="fn">product</span>(p, d, q))  <span class="cm"># todas las (p,d,q)</span>
+GRID_SAR   = <span class="fn">list</span>(itertools.<span class="fn">product</span>(p,d,q,P,D,Q)) <span class="cm"># todas las (p,d,q,P,D,Q)</span>
+
+<span class="cm"># Filtrar combinaciones nulas</span>
+GRID_ARIMA = [(p,d,q) <span class="kw">for</span> ... <span class="kw">if</span> p+q > <span class="nb">0</span>]
+GRID_SAR   = [(p,d,q,P,D,Q) <span class="kw">for</span> ... <span class="kw">if</span> (p+q > <span class="nb">0</span> <span class="kw">or</span> P+Q > <span class="nb">0</span>)]</pre>
+  </div>
+
+  <p><code>itertools.product</code> genera el producto cartesiano. Con p∈{0,1,2,3}, d∈{0,1}, q∈{0,1,2,3} tenemos 4×2×4 = 32 combinaciones para ARIMA. Para SARIMA/SARIMAX añadimos P∈{0,1,2}, D∈{0,1}, Q∈{0,1,2}: 32 × 3×2×3 = 576 combinaciones. Por eso existe el muestreo aleatorio.</p>
+
+  <div class="code-wrap">
+    <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> muestreo aleatorio</div>
+    <pre>SAMPLE   = <span class="kw">True</span>    <span class="cm"># activa muestreo si la grilla es muy grande</span>
+N_SAMPLE = <span class="nb">40</span>     <span class="cm"># evalúa solo 40 combinaciones aleatorias</span>
+
+<span class="kw">if</span> SAMPLE:
+    idx_a = rng.<span class="fn">choice</span>(<span class="fn">len</span>(GRID_ARIMA), N_SAMPLE, replace=<span class="kw">False</span>)
+    GRID_ARIMA = [GRID_ARIMA[i] <span class="kw">for</span> i <span class="kw">in</span> idx_a]  <span class="cm"># submuestra aleatoria</span></pre>
+  </div>
+
+  <div class="callout warn">
+    <div class="label">¿Cuándo activar SAMPLE = True?</div>
+    La grilla completa de SARIMA/SARIMAX puede tener ~500 combinaciones × 6 folds CV = 3000 ajustes de modelo. Con datos diarios de 6 años cada ajuste tarda varios segundos. <strong>Activa el muestreo</strong> para una exploración rápida. Una vez que sabes en qué región del espacio están los buenos parámetros, puedes acotar la grilla y hacer búsqueda exhaustiva.
+  </div>
+
+  <p>Los parámetros por defecto sirven como <strong>baseline</strong>: un ARIMA(2,1,2) es un punto de partida razonable para series económicas/de consumo. La comparación Default vs Tuneado al final del notebook muestra cuánto ganaste con el tuning.</p>
+</div>
+
+<!-- ─────────────── SECCIÓN 8 ─────────────── -->
+<div class="section" id="s8">
+  <div class="section-num">Sección 8</div>
+  <h2>Grid Search + Walk-Forward CV — El tuning <span class="pill pill-all">Celda 19</span></h2>
+
+  <p>Esta es la celda más costosa computacionalmente. Itera sobre cada combinación de parámetros, la evalúa con CV, y guarda el mejor resultado.</p>
+
+  <div class="code-wrap">
+    <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> grid search principal</div>
+    <pre><span class="kw">for</span> model_name <span class="kw">in</span> MODELS:          <span class="cm"># ARIMA, SARIMA, SARIMAX</span>
+    grid = GRID_ARIMA <span class="kw">if</span> model_name == <span class="st">'ARIMA'</span> <span class="kw">else</span> GRID_SAR
+
+    <span class="kw">for</span> i, combo <span class="kw">in</span> <span class="fn">enumerate</span>(<span class="fn">tqdm</span>(grid)):
+        <span class="kw">if</span> model_name == <span class="st">'ARIMA'</span>:
+            p, d, q = combo
+            order = (p, d, q);  seasonal_order = <span class="kw">None</span>
+        <span class="kw">else</span>:
+            p, d, q, P, D, Q = combo
+            order = (p, d, q);  seasonal_order = (P, D, Q, SEASONAL_M)
+
+        score = <span class="fn">cv_score_arima</span>(model_name, order, seasonal_order, CV_MONTHS)
+        rows.<span class="fn">append</span>({<span class="st">'cv_mape'</span>: score, ...})</pre>
+  </div>
+
+  <p>El flujo para cada combinación es:</p>
+  <ol>
+    <li>Desempacar los parámetros del combo (p, d, q) o (p, d, q, P, D, Q)</li>
+    <li>Llamar a <code>cv_score_arima()</code> que internamente hace N_CV_FOLDS ajustes</li>
+    <li>Guardar el MAPE promedio de CV en <code>rows</code></li>
+    <li>Al final, ordenar por MAPE y tomar la primera fila → mejores parámetros</li>
+  </ol>
+
+  <div class="callout info">
+    <div class="label">¿Por qué MAPE como métrica de tuning y no RMSE?</div>
+    El MAPE es adimensional (está en %) y comparable entre meses con distinto nivel de consumo absoluto. El RMSE en kWh depende del nivel de consumo: un RMSE de 800 kWh puede ser excelente en verano (alto consumo) y pésimo en invierno. Para el tuning necesitas una métrica que sea justa en todos los folds, y el MAPE lo consigue.
+  </div>
+</div>
+
+<!-- ─────────────── SECCIÓN 9 ─────────────── -->
+<div class="section sarimax" id="s9">
+  <div class="section-num">Sección 9</div>
+  <h2>Resultados del tuning — Convergencia <span class="pill pill-all">Celda 21</span></h2>
+
+  <p>Esta gráfica muestra cómo evoluciona el MAPE CV a medida que se van evaluando más combinaciones. Cada punto es una combinación (p,d,q) o (p,d,q,P,D,Q). La línea discontinua negra es el mínimo acumulado: una vez que se encuentra una buena combinación, la línea baja y se queda ahí.</p>
+
+  <div class="callout tip">
+    <div class="label">Cómo interpretar la gráfica de convergencia</div>
+    Si la línea de mínimo acumulado sigue bajando al final de la búsqueda, significa que el espacio de búsqueda está recortado y probablemente hay combinaciones mejores fuera de tu grilla. Si se estabiliza pronto, la grilla es suficiente. Idealmente la línea baja rápido al principio y luego se aplana → la búsqueda fue eficiente.
+  </div>
+
+  <p>El código usa:</p>
+  <div class="tbl-wrap">
+    <table>
+      <tr><th>Función matplotlib</th><th>Qué dibuja</th></tr>
+      <tr><td><code>ax.scatter()</code></td><td>Nube de puntos: cada combo evaluado con su MAPE CV</td></tr>
+      <tr><td><code>df_res['cv_mape'].cummin()</code></td><td>Mínimo acumulado (el mejor MAPE visto hasta cada iteración)</td></tr>
+      <tr><td><code>ax.axhline()</code></td><td>Línea horizontal en el mejor MAPE final</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ─────────────── SECCIÓN 10 ─────────────── -->
+<div class="section" id="s10">
+  <div class="section-num">Sección 10</div>
+  <h2>Evaluación final en test <span class="pill pill-all">Celda 23</span></h2>
+
+  <p>Una vez que tenemos los mejores parámetros, se hace la evaluación real sobre los meses de test. Esta es la función <code>eval_all_months</code>.</p>
+
+  <div class="code-wrap">
+    <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> evaluación final</div>
+    <pre><span class="kw">def</span> <span class="fn">eval_all_months</span>(params_dict, label=<span class="st">''</span>):
+    res = {}
+    <span class="kw">for</span> mes_test <span class="kw">in</span> TEST_MONTHS:
+        cutoff = pd.<span class="fn">Timestamp</span>(<span class="st">f'{mes_test}-01'</span>)
+        end    = cutoff + pd.offsets.<span class="fn">MonthEnd</span>(<span class="nb">1</span>)
+        tr  = df[df.index < cutoff]   <span class="cm"># TODA la historia hasta ese mes</span>
+        te  = df[(df.index >= cutoff) & (df.index <= end)]
+
+        <span class="kw">for</span> model_name, bp <span class="kw">in</span> params_dict.<span class="fn">items</span>():
+            preds, model = <span class="fn">fit_predict_model</span>(...)
+            metrics      = <span class="fn">compute_metrics</span>(y_te, preds)
+
+results_default = <span class="fn">eval_all_months</span>({m: DEFAULT_PARAMS[m] ...})
+results_tuned   = <span class="fn">eval_all_months</span>(best_params)</pre>
+  </div>
+
+  <p>Esta función se llama <strong>dos veces</strong>: primero con los parámetros por defecto, luego con los parámetros tuneados. Para cada mes de test hace lo mismo que el CV pero ahora usando <em>toda</em> la historia previa como train:</p>
+
+  <div class="callout info">
+    <div class="label">Ventana expandible en test</div>
+    Para el mes de test Septiembre 2024: train = todo hasta Agosto 2024.<br>
+    Para el mes de test Octubre 2024: train = todo hasta Septiembre 2024 (incluyendo ya el test de septiembre).<br>
+    Esto simula un escenario operacional real: cada mes se re-entrena el modelo con todos los datos disponibles hasta ese momento. Los modelos ARIMA se benefician mucho de esto porque son relativamente rápidos de reentrenar.
+  </div>
+
+  <p>El resultado es un diccionario anidado:</p>
+  <div class="formula">results[mes][modelo] = {preds, real, dates, metrics, model}</div>
+  <p>Que alimenta todas las visualizaciones siguientes.</p>
+</div>
+
+<!-- ─────────────── SECCIÓN 11-17 ─────────────── -->
+<div class="section gold" id="s11">
+  <div class="section-num">Secciones 11–17</div>
+  <h2>Visualizaciones de resultados <span class="pill pill-all">Celdas 25–37</span></h2>
+
+  <p>Cada sección genera una gráfica diferente con un propósito analítico específico. Todas usan matplotlib con el mismo esquema de colores: <strong style="color:var(--accent1)">azul = ARIMA</strong>, <strong style="color:var(--accent2)">naranja = SARIMA</strong>, <strong style="color:var(--accent3)">verde = SARIMAX</strong>.</p>
+
+  <div class="tbl-wrap">
+    <table>
+      <tr><th>Sección</th><th>Gráfica</th><th>¿Para qué sirve?</th></tr>
+      <tr>
+        <td><strong>11</strong></td>
+        <td>Predicción vs Real (tuneado)</td>
+        <td>Ver visualmente si el modelo sigue la forma de la curva de consumo. Un modelo que capta los picos y valles es bueno aunque su MAPE no sea el menor.</td>
+      </tr>
+      <tr>
+        <td><strong>12</strong></td>
+        <td>Degradación del error por horizonte</td>
+        <td>El error absoluto día a día. Muestra si el modelo se degrada mucho conforme predice más lejos (días 1–7 vs días 15–30). Las barras representan el error de cada día y la línea es una media móvil de 5 días.</td>
+      </tr>
+      <tr>
+        <td><strong>13</strong></td>
+        <td>Tabla Default vs Tuneado (Δ MAPE)</td>
+        <td>Comparación numérica. Un ΔMAPE negativo significa que el tuning mejoró el modelo. Si el delta es positivo, los parámetros por defecto eran mejores para ese mes.</td>
+      </tr>
+      <tr>
+        <td><strong>14</strong></td>
+        <td>Barras Default vs Tuneado</td>
+        <td>Versión visual de la tabla anterior. Permite ver de un vistazo qué modelo ganó más con el tuning.</td>
+      </tr>
+      <tr>
+        <td><strong>15</strong></td>
+        <td>Heatmap MAPE por mes y modelo</td>
+        <td>Colores rojo (peor) a verde (mejor). Permite detectar si un modelo falla consistentemente en ciertos meses (¿meses de mantenimiento? ¿temporada alta?).</td>
+      </tr>
+      <tr>
+        <td><strong>16</strong></td>
+        <td>APE promedio por horizonte</td>
+        <td>Promediando sobre todos los meses de test: muestra el error relativo en el día 1, día 2, … día 30. Un modelo bien calibrado debería tener una curva relativamente plana. Una curva que sube abruptamente indica que el modelo pierde información rápido.</td>
+      </tr>
+      <tr>
+        <td><strong>17</strong></td>
+        <td>MAPE por mes y modelo (barras agrupadas)</td>
+        <td>Permite ver si hay meses donde ARIMA gana, y otros donde SARIMAX gana. Útil para decidir si aplicar un modelo adaptativo por época del año.</td>
+      </tr>
+    </table>
+  </div>
+
+  <h3 style="color:var(--gold); margin: 24px 0 10px; font-size:1.05rem;">Funciones matplotlib clave usadas</h3>
+  <div class="tbl-wrap">
+    <table>
+      <tr><th>Función</th><th>Uso específico en el notebook</th></tr>
+      <tr><td><code>ax.plot(dates, real, 'k-o')</code></td><td>Línea negra con puntos: consumo real día a día</td></tr>
+      <tr><td><code>ax.plot(dates, preds, '--s')</code></td><td>Línea discontinua con cuadrados: predicciones</td></tr>
+      <tr><td><code>ax.bar()</code></td><td>Barras de error absoluto agrupadas por modelo</td></tr>
+      <tr><td><code>ax.imshow()</code></td><td>Heatmap de MAPE: matriz de colores</td></tr>
+      <tr><td><code>pd.Series.rolling(5).mean()</code></td><td>Media móvil de 5 días del error → suaviza el ruido en la gráfica de degradación</td></tr>
+      <tr><td><code>mticker.FuncFormatter(lambda x,_: f'{x:,.0f}')</code></td><td>Formato del eje Y: muestra kWh con separador de miles</td></tr>
+      <tr><td><code>DateFormatter('%d-%b')</code></td><td>Formato del eje X: muestra fechas como "01-Sep"</td></tr>
+      <tr><td><code>df.unstack('Modelo')</code></td><td>Pivota el DataFrame para que quede Mes×Modelo, necesario para el heatmap</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ─────────────── SECCIÓN 18 ─────────────── -->
+<div class="section" id="s18">
+  <div class="section-num">Sección 18</div>
+  <h2>Exportar resultados <span class="pill pill-all">Celda 39</span></h2>
+
+  <p>Al final del notebook se generan tres archivos que documentan todo el análisis:</p>
+
+  <div class="tbl-wrap">
+    <table>
+      <tr><th>Archivo</th><th>Contenido</th><th>¿Para qué sirve?</th></tr>
+      <tr>
+        <td><code>predicciones_tuned_arima.csv</code></td>
+        <td>Una fila por cada día × modelo × variante (default/tuned). Columnas: Fecha, Mes, Modelo, Variante, Real, Predicción, AbsError, APE%</td>
+        <td>Análisis posterior, comparar con otros modelos, reportes</td>
+      </tr>
+      <tr>
+        <td><code>metricas_tuned_arima.csv</code></td>
+        <td>MAE, RMSE, MAPE, R² para cada combinación mes × modelo × variante</td>
+        <td>Tabla resumen ejecutiva, comparación con notebook de árboles</td>
+      </tr>
+      <tr>
+        <td><code>best_params_arima.json</code></td>
+        <td>Los mejores parámetros encontrados para cada modelo: order y seasonal_order</td>
+        <td>Reproducibilidad: puedes cargar estos parámetros y aplicarlos sin re-correr el tuning</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="code-wrap">
+    <div class="code-header"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> exportar</div>
+    <pre>preds_df.<span class="fn">to_csv</span>(<span class="st">'predicciones_tuned_arima.csv'</span>, index=<span class="kw">False</span>)
+metrics_full.<span class="fn">to_csv</span>(<span class="st">'metricas_tuned_arima.csv'</span>, index=<span class="kw">False</span>)
+
+<span class="kw">with</span> <span class="fn">open</span>(<span class="st">'best_params_arima.json'</span>, <span class="st">'w'</span>) <span class="kw">as</span> f:
+    json.<span class="fn">dump</span>(bp_serial, f, indent=<span class="nb">2</span>)
+<span class="cm"># → {"ARIMA": {"order": [2,1,1], "seasonal_order": null},
+#    "SARIMAX": {"order": [1,1,2], "seasonal_order": [1,0,1,7]}}</span></pre>
+  </div>
+
+  <div class="callout tip">
+    <div class="label">Cómo comparar con el notebook de árboles</div>
+    Los archivos CSV generados tienen la misma estructura que los del notebook de XGBoost/RandomForest. Puedes cargar ambos en pandas y hacer un <code>pd.concat()</code> para comparar ARIMA vs SARIMA vs SARIMAX vs XGBoost en las mismas métricas y los mismos meses de test. Esto te da una visión completa de qué familia de modelos funciona mejor para tu problema.
+  </div>
+</div>
+
+<hr>
+
+<!-- ─────────────── RESUMEN FINAL ─────────────── -->
+<div class="section gold" id="resumen">
+  <div class="section-num">Resumen</div>
+  <h2>El flujo completo de un vistazo</h2>
+
+  <div class="tbl-wrap">
+    <table>
+      <tr><th>#</th><th>Qué se hace</th><th>Resultado</th></tr>
+      <tr><td>1–2</td><td>Cargar librerías y configurar fechas/parámetros</td><td>Entorno listo</td></tr>
+      <tr><td>3</td><td>Leer CSV, asignar frecuencia diaria, seleccionar columnas</td><td><code>df_raw</code> limpio con índice temporal</td></tr>
+      <tr><td>4</td><td>Calcular meses completos de train y test, folds CV</td><td><code>TEST_MONTHS</code>, <code>CV_MONTHS</code></td></tr>
+      <tr><td>5</td><td>Separar variable objetivo y variables exógenas</td><td><code>y_train</code>, <code>X_train</code>, <code>y_test</code>, <code>X_test</code></td></tr>
+      <tr><td>6</td><td>Definir funciones de métricas, construcción y evaluación de modelos</td><td>Herramientas reutilizables</td></tr>
+      <tr><td>7</td><td>Definir grilla de hiperparámetros y opcionalmente submuestrear</td><td><code>GRID_ARIMA</code>, <code>GRID_SAR</code></td></tr>
+      <tr><td>8</td><td>Grid Search con Walk-Forward CV para los 3 modelos</td><td><code>best_params</code> para ARIMA, SARIMA, SARIMAX</td></tr>
+      <tr><td>9</td><td>Visualizar convergencia del tuning</td><td>Gráfica de dispersión + mínimo acumulado</td></tr>
+      <tr><td>10</td><td>Evaluar Default y Tuneado sobre test completo</td><td><code>results_default</code>, <code>results_tuned</code></td></tr>
+      <tr><td>11–17</td><td>7 gráficas de análisis de resultados</td><td>Predicción vs real, error por horizonte, heatmaps, comparativas</td></tr>
+      <tr><td>18</td><td>Exportar CSV y JSON</td><td>3 archivos para análisis posterior y reproducibilidad</td></tr>
+    </table>
+  </div>
+
+  <div class="callout model">
+    <div class="label">¿Qué modelo elegir para tu estación?</div>
+    Como regla general para consumo eléctrico con patrón semanal claro: si las variables exógenas (festivos, mantenimientos) tienen impacto visible en la serie, <strong>SARIMAX</strong> debería ganar. Si el impacto es pequeño o ruidoso, <strong>SARIMA</strong> puede ser más estable. <strong>ARIMA puro</strong> sirve como referencia pero rara vez gana en datos con estacionalidad fuerte. El heatmap de la sección 15 y las barras agrupadas de la sección 17 te darán la respuesta definitiva con tus datos reales.
+  </div>
+</div>
+
+</main>
+
+<footer>
+  Guía de clase — ARIMA / SARIMA / SARIMAX aplicados al consumo eléctrico &nbsp;·&nbsp;
+  Dataset: <em>features_mes_completo.csv</em> &nbsp;·&nbsp;
+  Librería principal: <code>pmdarima</code> sobre <code>statsmodels</code>
+</footer>
+
+</body>
+</html>
